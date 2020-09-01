@@ -1,0 +1,56 @@
+global:
+  # How frequently to scrape targets by default.
+  scrape_interval: 5s
+
+  # How long until a scrape request times out.
+  scrape_timeout: 3s 
+
+  # How frequently to evaluate rules.
+  evaluation_interval: 10s
+
+  # The labels to add to any time series or alerts when communicating with
+  # external systems (federation, remote storage, Alertmanager).
+  #external_labels:
+  #  [ <labelname>: <labelvalue> ... ]
+
+  # File to which PromQL queries are logged.
+  # Reloading the configuration will reopen the file.
+  #[ query_log_file: <string> ]
+
+# Rule files specifies a list of globs. Rules and alerts are read from
+# all matching files.
+rule_files: 
+        - "alert_rules.yaml"
+# A list of scrape configurations.
+scrape_configs:
+   - job_name: test
+     # How frequently to scrape targets from this job.
+     scrape_interval: 5s
+     metrics_path:  /metrics
+     # honor_timestamps: <boolean> | default = true ]
+     scheme:  http 
+     static_configs:
+     - targets: ['localhost:9988']
+
+# Alerting specifies settings related to the Alertmanager.
+#alerting:
+#  alert_relabel_configs:
+#    [ - <relabel_config> ... ]
+#  alertmanagers:
+#    [ - <alertmanager_config> ... ]
+alerting:
+  alertmanagers:
+  - scheme: http
+    static_configs:
+    - targets:
+      - "localhost:9093"
+
+
+# Settings related to the remote write feature.
+#remote_write:
+#  [ - <remote_write> ... ]
+
+# Settings related to the remote read feature.
+#remote_read:
+#  [ - <remote_read> ... ]
+

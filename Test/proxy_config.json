@@ -1,0 +1,17 @@
+{
+    "opcServerURL":"opc.tcp://localhost:4840/freeopcua/server/",
+    "reconnectPeriod":10,
+    "publishingInterval": 1000,
+
+    "nodesDatabase":{
+        "isInMemory":true
+    },
+    "loggerConfig" :{
+        "loglevel" :"debug"
+    },
+    "nodesLoader" :{
+	"targetIdentifier" : "browseName", 
+        "whiteList":["MyVariable"]
+    }
+
+}
