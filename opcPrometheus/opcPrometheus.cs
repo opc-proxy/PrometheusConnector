@@ -8,6 +8,7 @@ using Opc.Ua;
 using Prometheus;
 using System.Collections.Generic;
 using System.Timers;
+using converter;
 
 namespace opcPrometheus
 {
@@ -21,29 +22,41 @@ namespace opcPrometheus
         public opcPromConfig _config;
         private static System.Timers.Timer aTimer;
 
+        private NodesSelector selector;
+
         public void init(JObject config, CancellationTokenSource cts)
         {
             _config = config.ToObject<opcPromConfigWrapper>().prometheus;
             server = new KestrelMetricServer(_config.port);
             variablesMap = new Dictionary<string, Gauge>();
             var db_nodes = _serv.db.getDbNodes();
-            foreach (var node in db_nodes)
-            {
-                variablesMap.Add(node.name, createMetric(node.name));
+            try{
+                selector = new NodesSelector(_config.variableFilter);
             }
-
-            variablesMap.Add("opc_server_up", createMetric("opc_server_up"));
-
-            setTimer();
-
-            try
-            {
-                server.Start();
-            }
-            catch (Exception e)
-            {
+            catch (Exception e){
                 logger.Error("HTTP server initialization failed: " + e.Message);
                 cts.Cancel();
+            }
+            if(!cts.IsCancellationRequested){
+                foreach (var node in db_nodes)
+                {
+                    if(selector.selectNode(node.name)) variablesMap.Add(node.name, createMetric(node.name));
+                }
+
+                variablesMap.Add("opc_server_up", createMetric("opc_server_up"));
+
+                setTimer();
+
+                try
+                {
+                    server.Start();
+                    logger.Info("Prometheus metrics exposed at http://localhost:"+_config.port+"/metrics");
+                }
+                catch (Exception e)
+                {
+                    logger.Error("HTTP server initialization failed: " + e.Message);
+                    cts.Cancel();
+                }
             }
         }
 
@@ -87,16 +100,17 @@ namespace opcPrometheus
         public void clean()
         {
             server?.Stop();
-            aTimer.Stop();
-            aTimer.Dispose();
+            aTimer?.Stop();
+            aTimer?.Dispose();
         }
 
 
         public void OnNotification(object emitter, MonItemNotificationArgs items)
         {
+            if (!variablesMap.ContainsKey(items.name)) return;
+    
             foreach (var itm in items.values)
             {
-                if (!variablesMap.ContainsKey(items.name)) continue;
                 if (itm.Value.GetType() == typeof(String)) continue;
                 double value = extractMetricValue(itm);
                 setMetric(items.name, value );
@@ -149,13 +163,14 @@ namespace opcPrometheus
         public string systemLabelValue { get; set; }
         public string systemLabelName { get; set; }
         public double failDefaultValue { get; set; }
-
+        public nodesConfig variableFilter{get; set;}
         public opcPromConfig()
         {
             port = 9988;
             systemLabelValue = "";
             systemLabelName = "";
             failDefaultValue = -999;
+            variableFilter = new nodesConfig();
         }
     }
 }
