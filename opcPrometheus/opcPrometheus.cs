@@ -43,7 +43,7 @@ namespace opcPrometheus
                     if(selector.selectNode(node.name)) variablesMap.Add(node.name, createMetric(node.name));
                 }
 
-                variablesMap.Add("opc_server_up", createMetric("opc_server_up"));
+                variablesMap.Add("opc_server_up", createMetric("opc_server_up","Describe the status of connection with the opc-server, 0 means TCP connection down."));
 
                 setTimer();
 
@@ -60,11 +60,11 @@ namespace opcPrometheus
             }
         }
 
-        public Gauge createMetric(string name)
+        public Gauge createMetric(string name, string message = "Metrics from OPC-Proxy client.")
         {
             if (!String.IsNullOrEmpty(_config.systemLabelName) && !String.IsNullOrEmpty(_config.systemLabelValue) )
-                return Metrics.CreateGauge(name, "Metrics from OPC-Proxy client.", new string[] { _config.systemLabelName });
-            else return Metrics.CreateGauge(name, "Metrics from OPC-Proxy client.");
+                return Metrics.CreateGauge(name, message, new string[] { _config.systemLabelName });
+            else return Metrics.CreateGauge(name, message);
         }
 
         public void setMetric(string name, double value)
@@ -94,7 +94,7 @@ namespace opcPrometheus
         void server_connection_metric(Object source, ElapsedEventArgs e)
         {
             double v = _serv.opc.isConnected() ? 1 : 0;
-            variablesMap.GetValueOrDefault("opc_server_up")?.WithLabels(new string[] { _config.systemLabelValue }).Set(v);
+            setMetric("opc_server_up",v);
         }
 
         public void clean()
