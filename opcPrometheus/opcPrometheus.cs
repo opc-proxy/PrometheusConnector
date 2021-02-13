@@ -138,7 +138,9 @@ namespace opcPrometheus
                     value = _config.failDefaultValue;
                 }
             }
-            if (DataValue.IsBad(itm)) value = _config.failDefaultValue;
+            if (DataValue.IsBad(itm) && 
+                itm.StatusCode != StatusCodes.BadNotConnected) value = _config.failDefaultValue;
+
             return value;
         }
 
